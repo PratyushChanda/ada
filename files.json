@@ -13,6 +13,11 @@
       "path": "README.md"
     },
     {
+      "type": "file",
+      "name": "conf.txt",
+      "path": "conf.txt"
+    },
+    {
       "type": "folder",
       "name": "installer",
       "children": [
@@ -25,6 +30,11 @@
           "type": "file",
           "name": "installer.js",
           "path": "installer/installer.js"
+        },
+        {
+          "type": "file",
+          "name": "log.txt",
+          "path": "installer/log.txt"
         },
         {
           "type": "file",
