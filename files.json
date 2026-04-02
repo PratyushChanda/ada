@@ -16,37 +16,6 @@
       "type": "file",
       "name": "conf.txt",
       "path": "conf.txt"
-    },
-    {
-      "type": "folder",
-      "name": "installer",
-      "children": [
-        {
-          "type": "file",
-          "name": "index.html",
-          "path": "installer/index.html"
-        },
-        {
-          "type": "file",
-          "name": "installer.js",
-          "path": "installer/installer.js"
-        },
-        {
-          "type": "file",
-          "name": "log.txt",
-          "path": "installer/log.txt"
-        },
-        {
-          "type": "file",
-          "name": "script.js",
-          "path": "installer/script.js"
-        },
-        {
-          "type": "file",
-          "name": "style.css",
-          "path": "installer/style.css"
-        }
-      ]
     }
   ]
 }
