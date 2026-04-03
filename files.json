@@ -18,9 +18,30 @@
       "path": "conf.txt"
     },
     {
-      "type": "file",
-      "name": "installer.html",
-      "path": "installer.html"
+      "type": "folder",
+      "name": "install",
+      "children": [
+        {
+          "type": "file",
+          "name": "index.html",
+          "path": "install/index.html"
+        },
+        {
+          "type": "file",
+          "name": "installer.js",
+          "path": "install/installer.js"
+        },
+        {
+          "type": "file",
+          "name": "script.js",
+          "path": "install/script.js"
+        },
+        {
+          "type": "file",
+          "name": "style.css",
+          "path": "install/style.css"
+        }
+      ]
     }
   ]
 }
