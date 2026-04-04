@@ -1007,11 +1007,22 @@ async function startPatchingVercel() {
     const f = await ghGetFile(S.pat, S.repo.repo, 'index.html');
     if (!f) throw new Error('index.html not found');
     logAdd('Replacing goToVercel() URL…');
-    const newContent = f.content.replace(
-      /(function goToVercel\(\)[\s\S]*?window\.location\.href\s*=\s*')[^']*(')/,
-      `$1${S.vercelUrl}$2`
+    // Robust slice-based replacement — avoids regex fragility on a large file.
+    // Finds the function by string index, operates only on a 400-char window
+    // around it, then stitches the file back together.
+    const MARKER = 'function goToVercel()';
+    const markerIdx = f.content.indexOf(MARKER);
+    if (markerIdx === -1) throw new Error('goToVercel() not found in index.html');
+    const windowEnd  = markerIdx + 400;
+    const before     = f.content.slice(0, markerIdx);
+    const funcWindow = f.content.slice(markerIdx, windowEnd);
+    const after      = f.content.slice(windowEnd);
+    const patched    = funcWindow.replace(
+      /window\.location\.href\s*=\s*'[^']*'/,
+      `window.location.href = '${S.vercelUrl}'`
     );
-    if (newContent === f.content) throw new Error('Could not find goToVercel URL pattern in index.html');
+    if (patched === funcWindow) throw new Error('Could not find window.location.href inside goToVercel()');
+    const newContent = before + patched + after;
     await ghPutFile(S.pat, S.repo.repo, 'index.html', newContent, f.sha,
       `installer: set Vercel redirect → ${S.vercelUrl}`);
     logAdd('✓ index.html updated with Vercel URL', 'success');
