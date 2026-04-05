@@ -880,7 +880,7 @@ async function startApplying() {
     if (!fmFile) throw new Error('fmtree.py not found.');
     let newFm = fmFile.content;
     // Idempotent: only add entries that aren't already in the set
-    const fmAdd = ['"installer.html"', '"conf.txt"', '"README.md"', '"LICENSE"'];
+    const fmAdd = ['"installer.html"', '"conf.txt"', '"LICENSE"'];
     let fmChanged = false;
     for (const entry of fmAdd) {
       if (!newFm.includes(entry)) {
