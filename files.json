@@ -1,5 +1,21 @@
 {
   "type": "folder",
   "name": "ada",
-  "children": []
+  "children": [
+    {
+      "type": "file",
+      "name": "LICENSE",
+      "path": "LICENSE"
+    },
+    {
+      "type": "file",
+      "name": "README.md",
+      "path": "README.md"
+    },
+    {
+      "type": "file",
+      "name": "installer.html",
+      "path": "installer.html"
+    }
+  ]
 }
