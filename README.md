@@ -1,3 +1,3 @@
-# Ada
+# sybau applet
 
-This repository powers the Ada web app.
+This repository powers the sybau applet web app.
