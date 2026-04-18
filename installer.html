@@ -859,9 +859,12 @@ async function startApplying() {
     newIdx = newIdx.replace(/<title>[^<]*<\/title>/, `<title>${fn}</title>`);
     newIdx = newIdx.replace(/<h1>[^<]*<\/h1>/, `<h1>${fn}</h1>`);
     newIdx = newIdx.replace(/Welcome to [^<"']*/g, `Welcome to ${fn}`);
+    // Fix root-relative obsidian script — breaks on project-page repos
+    newIdx = newIdx.replace(/(<script\s+src=")\/obsidian-markdown-it\.js/g,
+      '$1obsidian-markdown-it.js');
     await ghPutFile(pat, repo, 'index.html', newIdx, idxFile.sha,
-      `installer: brand as "${fn}", set pages host`);
-    ok('✓ index.html — title, h1, hostname updated');
+      `installer: brand as "${fn}", set pages host, fix script path`);
+    ok('✓ index.html — title, h1, hostname, script path updated');
 
     // manifest.json
     log('Patching manifest.json…');
@@ -1005,23 +1008,38 @@ async function startPatchingVercel() {
     logAdd('Fetching index.html…');
     const f = await ghGetFile(S.pat, S.repo.repo, 'index.html');
     if (!f) throw new Error('index.html not found');
-    logAdd('Replacing goToVercel() URL…');
-    // Find goToVercel() by string index, then search forward from that position
-    // for the first window.location.href assignment — no fixed window size needed.
-    const MARKER = 'function goToVercel()';
-    const markerIdx = f.content.indexOf(MARKER);
+    let idx7 = f.content;
+
+    // 1. goToVercel() href — find by marker, no fixed window
+    logAdd('Patching goToVercel() URL…');
+    const MARKER   = 'function goToVercel()';
+    const markerIdx = idx7.indexOf(MARKER);
     if (markerIdx === -1) throw new Error('goToVercel() not found in index.html');
-    const afterMarker = f.content.slice(markerIdx);
+    const afterMarker = idx7.slice(markerIdx);
     const hrefRe      = /window\.location\.href\s*=\s*'[^']*'/;
     const hrefMatch   = hrefRe.exec(afterMarker);
     if (!hrefMatch) throw new Error('window.location.href not found inside goToVercel()');
-    const absStart   = markerIdx + hrefMatch.index;
-    const newContent = f.content.slice(0, absStart)
-                     + `window.location.href = '${S.vercelUrl}'`
-                     + f.content.slice(absStart + hrefMatch[0].length);
-    await ghPutFile(S.pat, S.repo.repo, 'index.html', newContent, f.sha,
-      `installer: set Vercel redirect → ${S.vercelUrl}`);
-    logAdd('✓ index.html updated with Vercel URL', 'success');
+    const absStart = markerIdx + hrefMatch.index;
+    idx7 = idx7.slice(0, absStart)
+         + `window.location.href = '${S.vercelUrl}'`
+         + idx7.slice(absStart + hrefMatch[0].length);
+
+    // 2. fetch('/api/gh') → fetch('VERCEL_URL/api/gh')
+    // Both occurrences (loadWmConfig and ghProxy) — replace all root-relative /api/* calls
+    logAdd('Patching /api/* fetch calls…');
+    idx7 = idx7.replace(/fetch\s*\(\s*'\/api\//g, `fetch('${S.vercelUrl}/api/`);
+    idx7 = idx7.replace(/fetch\s*\(\s*"\/api\//g, `fetch("${S.vercelUrl}/api/`);
+
+    // 3. window.location.origin used to build /api/raw URL
+    logAdd('Patching window.location.origin…');
+    idx7 = idx7.replace(
+      /\$\{window\.location\.origin\}(\/api\/raw)/g,
+      `${S.vercelUrl}$1`
+    );
+
+    await ghPutFile(S.pat, S.repo.repo, 'index.html', idx7, f.sha,
+      `installer: set Vercel URL → ${S.vercelUrl}, fix API paths`);
+    logAdd('✓ index.html — Vercel URL and API paths updated', 'success');
     logAdd('');
     logAdd('All done! 🎉', 'success');
     await new Promise(res => setTimeout(res, 1200));
