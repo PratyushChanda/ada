@@ -6,15 +6,18 @@
     <title>Physics & Quantum Notes</title>
 
     <!--
-        TikZJax — CDN version from tikzjax.com.
-        This build has WASM + core.dump fully bundled inside the JS,
-        so there are NO external file fetches that can 404.
-        The tex_files (.sty.gz) are fetched from the same CDN origin.
-        Must be loaded as a plain <script> (not async/defer) so the
-        custom element is registered before the page body is parsed.
+        TikZJax — local build (required for tikz-3dplot, not available on CDN).
+
+        IMPORTANT — one-time repo fix needed:
+        Your tikzjax.js fetches tex.wasm.gz relative to its own file location.
+        Since tikzjax.js lives at /js/output/tikzjax.js, copy tex.wasm.gz there:
+
+            cp js/tex.wasm.gz js/output/tex.wasm.gz
+
+        Commit and push that file — then the diagram will render.
     -->
-    <link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css">
-    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
+    <link rel="stylesheet" href="/js/css/fonts.css">
+    <script src="/js/output/tikzjax.js"></script>
 
     <!--
         MathJax config — must be defined BEFORE the MathJax script tag.
@@ -278,8 +281,8 @@
 
         <!-- TikZ diagram — 3D coordinate axes + position vector -->
         <div class="diagram-card">
-            <script type="text/tikz" data-tex-packages='{"tikz-3dplot":""}'>
-                \begin{document}
+            <script type="text/tikz">
+                \usepackage{tikz-3dplot}
                 \begin{tikzpicture}[tdplot_main_coords, scale=1.5]
                     % Axes
                     \draw[thick,->] (0,0,0) -- (2.2,0,0) node[anchor=north east]{$x$};
@@ -300,7 +303,6 @@
                     \node[right] at (0,0.5,0) {\small$y$};
                     \node[right] at (0,0,0.5) {\small$z$};
                 \end{tikzpicture}
-                \end{document}
             </script>
             <span class="caption">Figure 1.1 — Position vector \(\vec{r}\) in \(\mathbb{R}^3\) with projected components</span>
         </div>
