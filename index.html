@@ -5,42 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Physics & Quantum Notes</title>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-
-    <!-- TikZJax local fonts -->
-    <link rel="stylesheet" href="./js/css/fonts.css">
-
     <!--
-        CRITICAL: TikZJax config MUST come before tikzjax.js loads.
-        These variables tell TikZJax where to find the engine files
-        relative to the page's origin on Vercel.
+        TikZJax — CDN version from tikzjax.com.
+        This build has WASM + core.dump fully bundled inside the JS,
+        so there are NO external file fetches that can 404.
+        The tex_files (.sty.gz) are fetched from the same CDN origin.
+        Must be loaded as a plain <script> (not async/defer) so the
+        custom element is registered before the page body is parsed.
     -->
-    <script>
-        // Absolute paths from site root — works reliably on Vercel
-        window.tikzjax = {
-            // Path to the compiled WebAssembly TeX engine
-            wasmPath: "/js/tex.wasm.gz",
-            // Path to the core memory dump
-            corePath: "/js/core.dump.gz",
-            // Path to the directory containing all .sty.gz / .tex.gz files
-            texFilesPath: "/js/tex_files/",
-        };
-
-        // Legacy flat-variable fallbacks (some builds read these instead)
-        window.tikzjaxWasmPath    = "/js/tex.wasm.gz";
-        window.tikzjaxCorePath    = "/js/core.dump.gz";
-        window.tikzjaxTexFilesPath = "/js/tex_files/";
-    </script>
-
-    <!-- TikZJax engine — loaded AFTER config above -->
-    <script src="./js/output/tikzjax.js"></script>
+    <link rel="stylesheet" href="https://tikzjax.com/v1/fonts.css">
+    <script src="https://tikzjax.com/v1/tikzjax.js"></script>
 
     <!--
-        MathJax config — must be defined before the MathJax script tag.
-        We disable automatic startup so we can control when it runs.
+        MathJax config — must be defined BEFORE the MathJax script tag.
     -->
     <script>
         MathJax = {
@@ -52,18 +29,13 @@
             options: {
                 skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
             },
-            startup: {
-                // Re-typeset after TikZJax has replaced <script type="text/tikz"> blocks
-                // so any math inside SVG labels is also rendered.
-                ready() {
-                    MathJax.startup.defaultReady();
-                }
-            }
         };
     </script>
 
-    <!-- MathJax — local copy, loaded async -->
-    <script id="MathJax-script" async src="./js/tex-mml-chtml.js"></script>
+    <!-- MathJax — CDN, fully self-contained, no missing font issues -->
+    <script id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
 
     <style>
         /* ── Design System ── */
