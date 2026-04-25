@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>sybau applet</title>
+  <title>Ada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e1e1e">
@@ -26,7 +26,7 @@
   <!-- Mermaid — diagram / flowchart rendering (```mermaid blocks) -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <!-- Obsidian-syntax compatibility layer (replaces obsidian-md.js) -->
-  <script src="/obsidian-markdown-it.js"></script>
+  <script src="obsidian-markdown-it.js"></script>
   <script>
     /* Set up markdown-it + Obsidian plugin once, reuse for all previews */
     (function () {
@@ -1412,7 +1412,7 @@
   <div id="guidanceOverlay" class="full-overlay">
     <div class="overlay-card">
       <div class="overlay-icon-lg">👋</div>
-      <div class="overlay-heading">Welcome to sybau applet</div>
+      <div class="overlay-heading">Welcome to Ada</div>
       <div class="overlay-subtext">A quick guide to get you started</div>
       <div class="guide-tabs">
         <button class="guide-tab" id="guideTabDesktop" onclick="switchGuideTab('desktop')">🖥️ Desktop</button>
@@ -1656,7 +1656,7 @@
 
   <div class="window">
     <div class="toolbar">
-      <h1>sybau applet</h1>
+      <h1>Ada</h1>
       <!-- Secondary buttons hidden on mobile into overflow menu -->
       <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
       <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up">↑</button>
@@ -2477,6 +2477,7 @@ async function confirmDeleteFile() {
   else        showToast(`Delete failed: ${dr.error}`, 'error');
 }
 
+<<<<<<< HEAD
 // ═══════════════════════════════════════════════════════════════
 // UPDATE CHECK
 // ═══════════════════════════════════════════════════════════════
@@ -2486,6 +2487,242 @@ function scheduleUpdateCheck() {
     const r = await ghProxy('latestCommit');
     if (r.ok && r.data.sha && lastKnownCommitSha && r.data.sha !== lastKnownCommitSha) {
       document.getElementById('updateNotice').style.display = 'flex';
+=======
+function closeWindow(id) {
+  const win = windows[id];
+  if (win) {
+    win.remove();
+    delete windows[id];
+    updateTaskbar();
+  }
+}
+
+function minimizeWindow(id) {
+  const win = windows[id];
+  if (win) {
+    win.style.display = "none";
+    updateTaskbar();
+  }
+}
+function showTaskbarContextMenu(x, y, id) {
+  const menu = document.getElementById("taskbarContextMenu");
+  menu.innerHTML = `
+    <button onclick="restoreFromTaskbar('${id}')">🗖 Restore</button>
+    <button onclick="minimizeWindow('${id}')">🗕 Minimize</button>
+    <button onclick="closeWindow('${id}')">✖ Close</button>
+  `;
+  menu.style.top = y + "px";
+  menu.style.left = x + "px";
+  menu.style.display = "flex";
+}
+
+document.addEventListener("click", () => {
+  document.getElementById("taskbarContextMenu").style.display = "none";
+});
+
+function restoreFromTaskbar(id) {
+  const win = windows[id];
+  if (win) {
+    win.style.display = "block";
+    updateTaskbar();
+  }
+}
+
+function updateTaskbar() {
+  const minimized = Object.entries(windows).filter(([_, el]) => el.style.display === "none");
+  
+  if (minimized.length === 0) {
+    taskbar.style.display = "none";
+    taskbar.innerHTML = "";
+    return;
+  }
+
+  taskbar.style.display = "flex";
+  taskbar.innerHTML = "";
+
+  for (const [id, el] of Object.entries(windows)) {
+  if (el.style.display === "none") {
+    const icon = document.createElement("div");
+    icon.className = "task-icon";
+    icon.dataset.name = el.querySelector(".title")?.textContent || "File";
+    icon.textContent = "📄";
+
+    icon.onclick = () => {
+      el.style.display = "block";
+      updateTaskbar();
+    };
+
+    icon.oncontextmenu = (e) => {
+      e.preventDefault();
+      showTaskbarContextMenu(e.pageX, e.pageY, id);
+    };
+
+    taskbar.appendChild(icon);
+  }
+}
+	}
+function toggleFullscreen(id, forceFull = false) {
+  const w = windows[id];
+  if (!w) return;
+
+  const isFullscreen = w.classList.contains("fullscreen");
+
+  if (forceFull && !isFullscreen) {
+    w.classList.add("fullscreen");
+    return;
+  }
+
+  if (isFullscreen) {
+    w.classList.remove("fullscreen");
+
+    // ✅ Remove mobile override styles
+    w.style.removeProperty("top");
+    w.style.removeProperty("left");
+
+    // ✅ Then set fallback desktop positions
+    w.style.top = "100px";
+    w.style.left = "100px";
+    w.style.width = "80vw";
+    w.style.height = "80vh";
+  } else {
+    w.classList.add("fullscreen");
+    w.style.top = "0";
+    w.style.left = "0";
+    w.style.width = "100vw";
+    w.style.height = "100vh";
+  }
+}
+
+
+function showContextMenu(x, y) {
+  contextMenu.style.top = y + 'px';
+  contextMenu.style.left = x + 'px';
+  contextMenu.style.display = 'flex';
+}
+
+function handlePreview() {
+  if (selected && selected.type === "file") {
+    isMobile
+      ? openMobilePreview(selected.path, selected.name)
+      : openPreview(selected.path, selected.name);
+  }
+  contextMenu.style.display = 'none';
+}
+
+function handleDownload() {
+  if (selected && selected.type === "file") {
+    const a = document.createElement("a");
+    a.href = selected.path;
+    a.download = selected.name;
+    a.click();
+    showStatus(`Downloading: ${selected.name}`);
+  }
+  contextMenu.style.display = 'none';
+}
+
+function openMobilePreview(path, filename) {
+  mobilePreviewTitle.textContent = filename;
+  fetchFileContent(path, filename, mobilePreviewContent);
+  mobilePreview.style.display = "flex";
+}
+
+function closeMobilePreview() {
+  mobilePreview.style.display = "none";
+  mobilePreviewContent.innerHTML = "";
+}
+
+function openPreview(path, filename) {
+  const id = 'preview-' + (++previewId);
+  const win = document.createElement("div");
+  win.className = "floating-window";
+  win.style.top = `${100 + previewId * 10}px`;
+  win.style.left = `${100 + previewId * 10}px`;
+  win.dataset.id = id;
+  
+  const ext = filename.split('.').pop().toLowerCase();
+  const isFullScreen = ext === 'md' || ext === 'markdown' || ext === 'pdf' || ext === 'html' || ext === 'htm'
+    || ext === 'doc' || ext === 'docx' || ext === 'xls' || ext === 'xlsx' || ext === 'ppt' || ext === 'pptx';
+
+  win.innerHTML = `
+    <div class="title-bar" onmousedown="startDrag(event, '${id}')">
+      <div class="title">${filename}</div>
+      <div class="buttons">
+        <button onclick="minimizeWindow('${id}')">🗕</button>
+        <button onclick="toggleFullscreen('${id}')">🗖</button>
+        <button onclick="closeWindow('${id}')">✖</button>
+      </div>
+    </div>
+    <div class="preview-body" id="${id}-body">Loading...</div>
+  `;
+  previewContainer.appendChild(win);
+  windows[id] = win;
+
+  const container = document.getElementById(id + "-body");
+  fetchFileContent(path, filename, container);
+  updateTaskbar();
+  
+  // Auto fullscreen for markdown and PDF
+  if (isFullScreen) {
+    setTimeout(() => toggleFullscreen(id, true), 100);
+  }
+}
+
+async function fetchFileContent(path, filename, container) {
+  const ext = (filename.includes('.') ? filename : path).split('.').pop().toLowerCase();
+
+  container.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;"><span class="loader"></span> Loading...</div>';
+
+  // For private repos, Vercel serves all deployed files as public static assets at their
+  // relative paths — no proxy needed. Only Office documents need /api/raw because the
+  // Office Online viewer fetches from Microsoft's servers, not from the Vercel deployment.
+  const rawUrl = `https://ada-one-rho.vercel.app/api/raw?path=${encodeURIComponent(path)}`;
+
+  try {
+    if (/\.(png|jpe?g|gif|bmp|webp|svg)$/i.test(filename)) {
+      container.innerHTML = `<img src="${path}" style="max-width:100%;height:auto;display:block;margin:auto;" alt="${filename}" />`;
+
+    } else if (/\.(mp3|wav|ogg|flac)$/i.test(filename)) {
+      container.innerHTML = `<audio controls src="${path}" style="width:100%;display:block;margin-top:20px"></audio>`;
+
+    } else if (/\.(mp4|webm)$/i.test(filename)) {
+      container.innerHTML = `<video controls src="${path}" style="max-width:100%;max-height:100%;display:block;margin:auto"></video>`;
+
+    } else if (/\.(docx?|xlsx?|pptx?)$/i.test(filename.includes('.') ? filename : path)) {
+      // Office Online viewer fetches externally — must go through /api/raw with WM_PAT
+      const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(rawUrl)}`;
+      container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
+      container.innerHTML = `<iframe src="${viewerUrl}" style="flex:1;min-height:0;width:100%;border:none;display:block;" allowfullscreen></iframe>`;
+
+    } else if (ext === 'html' || ext === 'htm') {
+      container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
+      container.innerHTML = `<iframe src="${path}" style="flex:1;min-height:0;width:100%;border:none;display:block;"></iframe>`;
+
+    } else if (ext === 'pdf') {
+      container.style.cssText = 'padding:0;overflow:hidden;display:flex;flex-direction:column;flex-grow:1;min-height:0;';
+      container.innerHTML = `<iframe src="${path}" style="flex:1;min-height:0;width:100%;border:none;display:block;"></iframe>`;
+
+    } else if (ext === 'md' || ext === 'markdown') {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const text = await response.text();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'markdown-content';
+      wrapper.innerHTML = markdownToHTML(text, path);
+      container.innerHTML = '';
+      container.appendChild(wrapper);
+      setTimeout(function () { initMarkdownFeatures(wrapper); }, 0);
+
+    } else {
+      // All other file types: display as plain text
+      try {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const text = await response.text();
+        container.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-family:Consolas,monospace;font-size:13px;line-height:1.5">${escapeHTML(text)}</pre>`;
+      } catch (error) {
+        container.innerHTML = `<div class="error">Error loading file: ${error.message}</div>`;
+      }
+>>>>>>> 792ab1da79b53933b131352125d0aa76ad02a13a
     }
   }, 25000);
 }
@@ -2495,11 +2732,261 @@ function dismissUpdateNotice() {
   document.getElementById('updateNotice').style.display = 'none';
 }
 
+<<<<<<< HEAD
 // ═══════════════════════════════════════════════════════════════
 // OVERLAY HELPERS
 // ═══════════════════════════════════════════════════════════════
 function showOverlay(id) { document.getElementById(id)?.classList.add('active'); }
 function hideOverlay(id) { document.getElementById(id)?.classList.remove('active'); }
+=======
+document.addEventListener("click", (e) => {
+  const isItem = e.target.closest(".file-item");
+  const isContext = e.target.closest(".context-menu");
+  if (!isItem && !isContext) {
+    document.querySelectorAll('.file-item.selected').forEach(el => el.classList.remove('selected'));
+    selected = null;
+    contextMenu.style.display = "none";
+  }
+});
+
+const manifest = {
+  name: "Root",
+  short_name: "Root",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#1e1e1e",
+  theme_color: "#1e1e1e",
+  icons: [
+    {
+      src: "favicon.png",
+      sizes: "192x192",
+      type: "image/png"
+    }
+  ]
+};
+
+// Fix #8: manifest.json is already declared in <head> via static <link rel="manifest">.
+// The dynamic blob manifest below was a duplicate and has been removed.
+
+// --- GitHub Pages → Vercel popup ---
+function hasVercelDismissCookie() {
+  return document.cookie.split(';').some(c => c.trim().startsWith('vercel_redirect_dismissed=1'));
+}
+
+function goToVercel() {
+  document.cookie = 'vercel_redirect_dismissed=1; max-age=31536000; path=/; SameSite=Lax';
+  window.location.href = 'https://ada-one-rho.vercel.app';
+}
+
+function dismissVercelPopup() {
+  document.cookie = 'vercel_redirect_dismissed=1; max-age=31536000; path=/; SameSite=Lax';
+  const popup = document.getElementById('vercelPopup');
+  popup.classList.remove('visible');
+  setTimeout(() => { popup.style.display = 'none'; }, 400);
+}
+
+function maybeShowVercelPopup() {
+  if (hasVercelDismissCookie()) return;
+  if (window.location.hostname === 'pratyushchanda.github.io') {
+    setTimeout(() => {
+      document.getElementById('vercelPopup').classList.add('visible');
+    }, 1800);
+  }
+}
+
+// --- Community ---
+function openCommunity() {
+  const path = 'community/community.html';
+  if (isMobile) {
+    openMobilePreview(path, 'Community 💬');
+  } else {
+    openPreview(path, 'Community 💬');
+  }
+}
+
+window.addEventListener("DOMContentLoaded", fetchTree);
+window.addEventListener("DOMContentLoaded", maybeShowVercelPopup);
+
+
+				     
+</script>
+<script>
+  /**
+   * Render raw Markdown to an HTML string.
+   * The caller must insert the HTML into the DOM, then call
+   * initMarkdownFeatures(containerEl) to activate KaTeX / Mermaid / hljs / folds.
+   * @param {string}  rawText   – Markdown source (may include YAML front-matter)
+   * @param {string}  [filePath] – source file path; used to resolve ![[embed]] URLs
+   */
+  function markdownToHTML(rawText, filePath) {
+    /* Expose current file path so resolveEmbed can build correct relative URLs */
+    window._currentNotePath = filePath || '';
+    /* Strip YAML front-matter before rendering */
+    var parsed  = window.obsidianParseFrontmatter(rawText);
+    /* Render via markdown-it + Obsidian plugin */
+    return window.md.render(parsed.content);
+  }
+
+  /**
+   * Activate all post-render Obsidian features scoped to a specific DOM element.
+   * Must be called AFTER the rendered HTML has been inserted into the DOM.
+   * @param {Element} container – the wrapper element that received the HTML
+   */
+  function initMarkdownFeatures(container) {
+    if (typeof window.obsidianInitCalloutFolds === 'function') {
+      window.obsidianInitCalloutFolds(container);
+    }
+    if (typeof window.obsidianInitMath === 'function') {
+      window.obsidianInitMath(container);
+    }
+    if (typeof window.obsidianInitMermaid === 'function') {
+      window.obsidianInitMermaid(container);
+    }
+    if (typeof window.obsidianInitHighlight === 'function') {
+      window.obsidianInitHighlight(container);
+    }
+  }
+  
+let lastCommit = null;	
+let lastHash = null;
+let initialLoadComplete = false;
+async function fetchLatestCommit() {
+  try {
+    const res = await ghProxy('latestCommit');
+    if (!res.ok) throw new Error(res.error || 'Proxy error');
+    return res.data.sha || null;
+  } catch (err) {
+    console.error("Could not fetch latest commit:", err);
+    return null;
+  }
+}
+
+async function checkForUpdate() {
+  if (!initialLoadComplete) return;
+
+  const newCommit = await fetchLatestCommit();
+  if (!newCommit) return;
+  
+  if (lastCommit && newCommit !== lastCommit) {
+    const notice = document.getElementById("updateNotice");
+    if (notice && notice.style.display !== "flex") {
+      notice.style.display = "flex";
+    }
+
+  }
+}	
+
+
+</script>
+<div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
+  <span>Update detected. Refresh now to apply changes.</span>
+  <button onclick="location.reload()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
+  <button onclick="dismissUpdateNotice()">×</button>
+	</div>
+<div id="taskbarContextMenu" class="context-menu" style="display: none;"></div>
+
+<script>
+// ===== AUTH SYSTEM =====
+let adminsData = [];
+let currentSession = null;
+
+// ===== RUNTIME CONFIG =====
+// SAToken and PAT live exclusively in Vercel environment variables (WM_SATOKEN, WM_PAT).
+// /api/gh returns only the SAToken to the browser — the PAT stays server-side always.
+async function loadWmConfig() {
+  try {
+    const r = await fetch('https://ada-one-rho.vercel.app/api/gh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'config' })
+    });
+    if (r.ok) {
+      const cfg = await r.json();
+      if (cfg.satoken) window._WM_SATOKEN = cfg.satoken.trim().toUpperCase();
+    }
+  } catch(e) { /* proxy unreachable — Super Admin login will be unavailable */ }
+}
+
+async function loadAdmins() {
+  try {
+    const r = await fetch('admins.json?' + Date.now());
+    if (r.ok) adminsData = (await r.json()).admins || [];
+  } catch(e) { adminsData = []; }
+}
+
+function doLogin(code) {
+  const upper = code.toUpperCase().trim();
+  // Super Admin: only works if SAToken was loaded from Vercel proxy — no hardcoded fallback
+  if (window._WM_SATOKEN && upper === window._WM_SATOKEN) {
+    currentSession = { code: upper, role: 'superadmin', permissions: ['create','delete','modify','approve'], name: 'Super Admin' };
+    sessionStorage.setItem('wm_session', JSON.stringify(currentSession));
+    return { ok: true };
+  }
+  const a = adminsData.find(x => x.code === upper);
+  if (a) {
+    currentSession = { code: upper, role: 'admin', permissions: a.permissions || [], name: a.name || 'Admin' };
+    sessionStorage.setItem('wm_session', JSON.stringify(currentSession));
+    return { ok: true };
+  }
+  return { ok: false };
+}
+
+function doLogout() {
+  currentSession = null;
+  sessionStorage.removeItem('wm_session');
+  updateAuthUI();
+  hideLoginScreen();
+}
+
+function restoreSession() {
+  try {
+    const s = sessionStorage.getItem('wm_session');
+    if (s) currentSession = JSON.parse(s);
+  } catch(e) {}
+}
+
+function isLoggedIn()   { return !!currentSession; }
+function isSuperAdmin() { return currentSession?.role === 'superadmin'; }
+function isAdmin()      { return ['admin','superadmin'].includes(currentSession?.role); }
+function hasPerm(p)     { return currentSession?.permissions?.includes(p); }
+
+function updateAuthUI() {
+  const lb = document.getElementById('loginBtnToolbar');
+  const ab = document.getElementById('adminPanelBtn');
+  const mobAb = document.getElementById('mobOverflowAdminBtn');
+  if (!lb) return;
+  if (isLoggedIn()) {
+    lb.textContent = (isSuperAdmin() ? '👑 ' : '🔑 ') + currentSession.name;
+    lb.style.background = 'var(--selected)';
+    lb.style.color = 'var(--accent)';
+    ab.style.display = '';
+    if (mobAb) mobAb.style.display = '';
+  } else {
+    lb.textContent = '🔑 Login';
+    lb.style.background = '';
+    lb.style.color = '';
+    ab.style.display = 'none';
+    if (mobAb) mobAb.style.display = 'none';
+  }
+  updatePendingBadge();
+}
+
+// ===== GUIDANCE =====
+function showGuidanceIfNeeded() {
+  if (localStorage.getItem('wm_guided')) return;
+  const o = document.getElementById('guidanceOverlay');
+  o.style.display = 'flex';
+  requestAnimationFrame(() => o.classList.add('active'));
+  switchGuideTab(isMobile ? 'mobile' : 'desktop');
+}
+
+function dismissGuidance() {
+  localStorage.setItem('wm_guided', '1');
+  const o = document.getElementById('guidanceOverlay');
+  o.classList.remove('active');
+  setTimeout(() => { o.style.display = 'none'; }, 380);
+}
+>>>>>>> 792ab1da79b53933b131352125d0aa76ad02a13a
 
 // ═══════════════════════════════════════════════════════════════
 // GUIDANCE
@@ -3996,6 +4483,7 @@ async function revokeAdmin(code) {
   await refreshAdminCodes();
 }
 
+<<<<<<< HEAD
 // ═══════════════════════════════════════════════════════════════
 // PENDING UPLOADS
 // ═══════════════════════════════════════════════════════════════
@@ -4003,6 +4491,25 @@ async function refreshPendingUploads() {
   const listEl   = document.getElementById('pendingUploadsList');
   const countEl  = document.getElementById('pendingCountLabel');
   listEl.innerHTML = '<div style="font-size:13px;opacity:.5;">Loading…</div>';
+=======
+// ===== GITHUB PROXY HELPER =====
+// Calls the Vercel /api/gh serverless function.
+// Returns { ok, data } or { ok: false, error }.
+async function ghProxy(action, payload = {}) {
+  try {
+    const r = await fetch('https://ada-one-rho.vercel.app/api/gh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload })
+    });
+    const data = await r.json();
+    if (!r.ok) return { ok: false, error: data.error || `Proxy error (${r.status})` };
+    return { ok: true, data };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+>>>>>>> 792ab1da79b53933b131352125d0aa76ad02a13a
 
   const res = await ghProxy('getFileContent', { path: 'waiting-list/index.json' });
   if (!res.ok || !res.data.content) {
