@@ -11,47 +11,6 @@
       "type": "file",
       "name": "_index.html",
       "path": "_index.html"
-    },
-    {
-      "type": "folder",
-      "name": "bin",
-      "children": [
-        {
-          "type": "file",
-          "name": "app.js",
-          "path": "bin/app.js"
-        },
-        {
-          "type": "file",
-          "name": "auth.js",
-          "path": "bin/auth.js"
-        },
-        {
-          "type": "file",
-          "name": "markdown.js",
-          "path": "bin/markdown.js"
-        },
-        {
-          "type": "file",
-          "name": "md-init.js",
-          "path": "bin/md-init.js"
-        },
-        {
-          "type": "file",
-          "name": "mobile.js",
-          "path": "bin/mobile.js"
-        },
-        {
-          "type": "file",
-          "name": "style.css",
-          "path": "bin/style.css"
-        },
-        {
-          "type": "file",
-          "name": "upload.js",
-          "path": "bin/upload.js"
-        }
-      ]
     }
   ]
 }
