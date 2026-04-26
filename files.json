@@ -4,6 +4,11 @@
   "children": [
     {
       "type": "file",
+      "name": "PHYSICS03-MOTION_IN_A_PLANE-NOTES.md",
+      "path": "PHYSICS03-MOTION_IN_A_PLANE-NOTES.md"
+    },
+    {
+      "type": "file",
       "name": "README.md",
       "path": "README.md"
     },
