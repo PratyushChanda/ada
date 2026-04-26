@@ -18,52 +18,6 @@
       "path": "_index.html"
     },
     {
-      "type": "folder",
-      "name": "fonts",
-      "children": [
-        {
-          "type": "file",
-          "name": "TestTiemposText-Bold.otf",
-          "path": "fonts/TestTiemposText-Bold.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-BoldItalic.otf",
-          "path": "fonts/TestTiemposText-BoldItalic.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-Medium.otf",
-          "path": "fonts/TestTiemposText-Medium.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-MediumItalic.otf",
-          "path": "fonts/TestTiemposText-MediumItalic.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-Regular.otf",
-          "path": "fonts/TestTiemposText-Regular.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-RegularItalic.otf",
-          "path": "fonts/TestTiemposText-RegularItalic.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-Semibold.otf",
-          "path": "fonts/TestTiemposText-Semibold.otf"
-        },
-        {
-          "type": "file",
-          "name": "TestTiemposText-SemiboldItalic.otf",
-          "path": "fonts/TestTiemposText-SemiboldItalic.otf"
-        }
-      ]
-    },
-    {
       "type": "file",
       "name": "tikz-sample.md",
       "path": "tikz-sample.md"
