@@ -852,21 +852,29 @@ async function startApplying() {
       rawJs.sha, `installer: set REPO → ${repo} in raw.js`);
     ok('✓ api/raw.js — REPO updated');
 
-    // index.html — idempotent: match any .github.io host and any <h1> content
-    log('Patching root index.html…');
+    // index.html — title, h1, welcome text (hostname now lives in bin/app.js)
+    log('Patching index.html…');
     const idxFile = await ghGetFile(pat, repo, 'index.html');
     if (!idxFile) throw new Error('index.html not found.');
     let newIdx = idxFile.content;
-    newIdx = newIdx.replace(/[a-z0-9-]+\.github\.io(?=['""])/gi, host);
     newIdx = newIdx.replace(/<title>[^<]*<\/title>/, `<title>${fn}</title>`);
     newIdx = newIdx.replace(/<h1>[^<]*<\/h1>/, `<h1>${fn}</h1>`);
     newIdx = newIdx.replace(/Welcome to [^<"']*/g, `Welcome to ${fn}`);
-    // Fix root-relative obsidian script — breaks on project-page repos
-    newIdx = newIdx.replace(/(<script\s+src=")\/obsidian-markdown-it\.js/g,
-      '$1obsidian-markdown-it.js');
     await ghPutFile(pat, repo, 'index.html', newIdx, idxFile.sha,
-      `installer: brand as "${fn}", set pages host, fix script path`);
-    ok('✓ index.html — title, h1, hostname, script path updated');
+      `installer: brand as "${fn}" — title, h1, welcome text`);
+    ok('✓ index.html — title, h1, welcome text updated');
+
+    // bin/app.js — patch hardcoded GitHub Pages hostname in maybeShowVercelPopup
+    log('Patching bin/app.js (Pages hostname)…');
+    const appBinFile = await ghGetFile(pat, repo, 'bin/app.js');
+    if (!appBinFile) throw new Error('bin/app.js not found.');
+    const newAppBin = appBinFile.content.replace(
+      /window\.location\.hostname\s*===\s*'[a-z0-9-]+\.github\.io'/gi,
+      `window.location.hostname === '${host}'`
+    );
+    await ghPutFile(pat, repo, 'bin/app.js', newAppBin, appBinFile.sha,
+      `installer: set Pages host → ${host} in bin/app.js`);
+    ok('✓ bin/app.js — GitHub Pages hostname updated');
 
     // manifest.json
     log('Patching manifest.json…');
@@ -1007,41 +1015,49 @@ async function startPatchingVercel() {
   showStep('patching-vercel');
   const logAdd = (m, c) => addLog('pv-log', m, c);
   try {
-    logAdd('Fetching index.html…');
-    const f = await ghGetFile(S.pat, S.repo.repo, 'index.html');
-    if (!f) throw new Error('index.html not found');
-    let idx7 = f.content;
+    // 1. bin/app.js — goToVercel() href + window.location.origin for /api/raw
+    logAdd('Fetching bin/app.js…');
+    const appFile = await ghGetFile(S.pat, S.repo.repo, 'bin/app.js');
+    if (!appFile) throw new Error('bin/app.js not found');
+    let appJs = appFile.content;
 
-    // 1. goToVercel() href — find by marker, no fixed window
     logAdd('Patching goToVercel() URL…');
-    const MARKER   = 'function goToVercel()';
-    const markerIdx = idx7.indexOf(MARKER);
-    if (markerIdx === -1) throw new Error('goToVercel() not found in index.html');
-    const afterMarker = idx7.slice(markerIdx);
+    const MARKER    = 'function goToVercel()';
+    const markerIdx = appJs.indexOf(MARKER);
+    if (markerIdx === -1) throw new Error('goToVercel() not found in bin/app.js');
+    const afterMarker = appJs.slice(markerIdx);
     const hrefRe      = /window\.location\.href\s*=\s*'[^']*'/;
     const hrefMatch   = hrefRe.exec(afterMarker);
     if (!hrefMatch) throw new Error('window.location.href not found inside goToVercel()');
     const absStart = markerIdx + hrefMatch.index;
-    idx7 = idx7.slice(0, absStart)
-         + `window.location.href = '${S.vercelUrl}'`
-         + idx7.slice(absStart + hrefMatch[0].length);
+    appJs = appJs.slice(0, absStart)
+          + `window.location.href = '${S.vercelUrl}'`
+          + appJs.slice(absStart + hrefMatch[0].length);
 
-    // 2. fetch('/api/gh') → fetch('VERCEL_URL/api/gh')
-    // Both occurrences (loadWmConfig and ghProxy) — replace all root-relative /api/* calls
-    logAdd('Patching /api/* fetch calls…');
-    idx7 = idx7.replace(/fetch\s*\(\s*'\/api\//g, `fetch('${S.vercelUrl}/api/`);
-    idx7 = idx7.replace(/fetch\s*\(\s*"\/api\//g, `fetch("${S.vercelUrl}/api/`);
-
-    // 3. window.location.origin used to build /api/raw URL
     logAdd('Patching window.location.origin…');
-    idx7 = idx7.replace(
+    appJs = appJs.replace(
       /\$\{window\.location\.origin\}(\/api\/raw)/g,
       `${S.vercelUrl}$1`
     );
 
-    await ghPutFile(S.pat, S.repo.repo, 'index.html', idx7, f.sha,
-      `installer: set Vercel URL → ${S.vercelUrl}, fix API paths`);
-    logAdd('✓ index.html — Vercel URL and API paths updated', 'success');
+    await ghPutFile(S.pat, S.repo.repo, 'bin/app.js', appJs, appFile.sha,
+      `installer: set Vercel URL → ${S.vercelUrl} in bin/app.js`);
+    logAdd('✓ bin/app.js — Vercel URL and origin patched', 'success');
+
+    // 2. bin/auth.js — /api/* fetch calls (loadWmConfig + ghProxy)
+    logAdd('Fetching bin/auth.js…');
+    const authFile = await ghGetFile(S.pat, S.repo.repo, 'bin/auth.js');
+    if (!authFile) throw new Error('bin/auth.js not found');
+    let authJs = authFile.content;
+
+    logAdd('Patching /api/* fetch calls…');
+    authJs = authJs.replace(/fetch\s*\(\s*'\/api\//g, `fetch('${S.vercelUrl}/api/`);
+    authJs = authJs.replace(/fetch\s*\(\s*"\/api\//g, `fetch("${S.vercelUrl}/api/`);
+
+    await ghPutFile(S.pat, S.repo.repo, 'bin/auth.js', authJs, authFile.sha,
+      `installer: set Vercel URL → ${S.vercelUrl} in bin/auth.js`);
+    logAdd('✓ bin/auth.js — API fetch paths updated', 'success');
+
     logAdd('');
     logAdd('All done! 🎉', 'success');
     await new Promise(res => setTimeout(res, 1200));
