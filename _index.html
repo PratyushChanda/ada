@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>sybau applet</title>
+  <title>Ada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e1e1e">
@@ -26,7 +26,12 @@
   <!-- Mermaid — diagram / flowchart rendering (```mermaid blocks) -->
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <!-- Obsidian-syntax compatibility layer (replaces obsidian-md.js) -->
+<<<<<<< HEAD
   <script src="/obsidian-markdown-it.js"></script>
+  <link rel="stylesheet" href="bin/style.css">
+  <script src="bin/md-init.js"></script>
+=======
+  <script src="obsidian-markdown-it.js"></script>
   <script>
     /* Set up markdown-it + Obsidian plugin once, reuse for all previews */
     (function () {
@@ -1236,6 +1241,7 @@
     }
     #vercelPopupLater:hover { opacity: 0.9; }
   </style>
+>>>>>>> c65d32e1ce826973898ff8c113d98e86425c10ea
 </head>
 <body>
   <div id="splash"><img src="favicon.png" alt="Loading..." /></div>
@@ -1244,7 +1250,7 @@
   <div id="guidanceOverlay" class="full-overlay">
     <div class="overlay-card">
       <div class="overlay-icon-lg">👋</div>
-      <div class="overlay-heading">Welcome to sybau applet</div>
+      <div class="overlay-heading">Welcome to Ada</div>
       <div class="overlay-subtext">A quick guide to get you started</div>
       <div class="guide-tabs">
         <button class="guide-tab" id="guideTabDesktop" onclick="switchGuideTab('desktop')">🖥️ Desktop</button>
@@ -1488,7 +1494,7 @@
 
   <div class="window">
     <div class="toolbar">
-      <h1>sybau applet</h1>
+      <h1>Ada</h1>
       <!-- Secondary buttons hidden on mobile into overflow menu -->
       <button class="mob-toolbar-overflow" onclick="refreshFiles()" title="Refresh">↻</button>
       <button class="mob-toolbar-overflow" onclick="goUp()" title="Go up">↑</button>
@@ -1545,6 +1551,10 @@
   
   <div id="status"></div>
 
+<<<<<<< HEAD
+<script src="bin/app.js"></script>
+<script src="bin/markdown.js"></script>
+=======
 <script>
 const listView = document.getElementById("listView");
 const pathNav = document.getElementById("pathNav");
@@ -2185,7 +2195,7 @@ async function fetchFileContent(path, filename, container) {
   // For private repos, Vercel serves all deployed files as public static assets at their
   // relative paths — no proxy needed. Only Office documents need /api/raw because the
   // Office Online viewer fetches from Microsoft's servers, not from the Vercel deployment.
-  const rawUrl = `${window.location.origin}/api/raw?path=${encodeURIComponent(path)}`;
+  const rawUrl = `https://ada-one-rho.vercel.app/api/raw?path=${encodeURIComponent(path)}`;
 
   try {
     if (/\.(png|jpe?g|gif|bmp|webp|svg)$/i.test(filename)) {
@@ -2381,12 +2391,18 @@ async function checkForUpdate() {
 
 
 </script>
+>>>>>>> c65d32e1ce826973898ff8c113d98e86425c10ea
 <div id="updateNotice" style="display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--item); color: var(--fg); padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 12px;">
   <span>Update detected. Refresh now to apply changes.</span>
   <button onclick="location.reload()" style="background:var(--accent);color:white;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">Refresh</button>
   <button onclick="dismissUpdateNotice()">×</button>
 	</div>
 <div id="taskbarContextMenu" class="context-menu" style="display: none;"></div>
+<<<<<<< HEAD
+<script src="bin/auth.js"></script>
+<script src="bin/upload.js"></script>
+<script src="bin/mobile.js"></script>
+=======
 
 <script>
 // ===== AUTH SYSTEM =====
@@ -2398,7 +2414,7 @@ let currentSession = null;
 // /api/gh returns only the SAToken to the browser — the PAT stays server-side always.
 async function loadWmConfig() {
   try {
-    const r = await fetch('/api/gh', {
+    const r = await fetch('https://ada-one-rho.vercel.app/api/gh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'config' })
@@ -2658,7 +2674,7 @@ async function revokeAdmin(code) {
 // Returns { ok, data } or { ok: false, error }.
 async function ghProxy(action, payload = {}) {
   try {
-    const r = await fetch('/api/gh', {
+    const r = await fetch('https://ada-one-rho.vercel.app/api/gh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...payload })
@@ -3384,4 +3400,5 @@ window.addEventListener('DOMContentLoaded', async () => {
   showGuidanceIfNeeded();
 });
 </script>
+>>>>>>> c65d32e1ce826973898ff8c113d98e86425c10ea
 </body>

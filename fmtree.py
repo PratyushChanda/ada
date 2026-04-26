@@ -21,6 +21,7 @@ EXCLUDED_ROOT_FILES = {
 }
 
 EXCLUDED_ROOT_DIRS = {
+    "bin",
     "community",
     "waiting-list",
     "api",

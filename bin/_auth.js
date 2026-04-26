@@ -21,7 +21,7 @@ async function loadWmConfig() {
 
 async function loadAdmins() {
   try {
-    const r = await fetch('bin/admins.json?' + Date.now());
+    const r = await fetch('admins.json?' + Date.now());
     if (r.ok) adminsData = (await r.json()).admins || [];
   } catch(e) { adminsData = []; }
 }
@@ -254,10 +254,10 @@ async function revokeAdmin(code) {
   adminsData = adminsData.filter(a => a.code !== code);
   const ok = await saveAdminsToGitHub();
   if (ok) {
-    showStatus(`✓ Admin code ${code} revoked and removed from bin/admins.json.`);
+    showStatus(`✓ Admin code ${code} revoked and removed from admins.json.`);
   } else {
     await loadAdmins();
-    showStatus('✗ Failed to revoke: could not update bin/admins.json on GitHub.');
+    showStatus('✗ Failed to revoke: could not update admins.json on GitHub.');
   }
   renderAdminCodesList();
 }
@@ -286,10 +286,10 @@ async function saveAdminsToGitHub() {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const b64 = btoa(binary);
-  const getRes = await ghProxy('getFile', { path: 'bin/admins.json' });
-  if (!getRes.ok) { showStatus(`✗ Could not read bin/admins.json: ${getRes.error}`); return false; }
+  const getRes = await ghProxy('getFile', { path: 'admins.json' });
+  if (!getRes.ok) { showStatus(`✗ Could not read admins.json: ${getRes.error}`); return false; }
   const sha = getRes.data.sha || null;
-  const putRes = await ghProxy('putFile', { path: 'bin/admins.json', content: b64, message: 'Update admin codes', sha });
-  if (!putRes.ok) { showStatus(`✗ Could not save bin/admins.json: ${putRes.error}`); return false; }
+  const putRes = await ghProxy('putFile', { path: 'admins.json', content: b64, message: 'Update admin codes', sha });
+  if (!putRes.ok) { showStatus(`✗ Could not save admins.json: ${putRes.error}`); return false; }
   return true;
 }
