@@ -44,7 +44,7 @@ const FILE_ICONS = {
 };
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("bin/service-worker.js", { scope: '/' }).then(() => {
+  navigator.serviceWorker.register("service-worker.js").then(() => {
     console.log("Service Worker registered");
   }).catch(err => {
     console.error("SW registration failed:", err);
@@ -637,7 +637,7 @@ async function fetchFileContent(path, filename, container) {
   // For private repos, Vercel serves all deployed files as public static assets at their
   // relative paths — no proxy needed. Only Office documents need /api/raw because the
   // Office Online viewer fetches from Microsoft's servers, not from the Vercel deployment.
-  const rawUrl = `https://ada-one-rho.vercel.app/api/raw?path=${encodeURIComponent(path)}`;
+  const rawUrl = `${window.location.origin}/api/raw?path=${encodeURIComponent(path)}`;
 
   try {
     if (/\.(png|jpe?g|gif|bmp|webp|svg)$/i.test(filename)) {
