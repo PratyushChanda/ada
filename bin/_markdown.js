@@ -1,7 +1,7 @@
   /**
    * Render raw Markdown to an HTML string.
    * The caller must insert the HTML into the DOM, then call
-   * initMarkdownFeatures(containerEl) to activate MathJax / TikZJax / Mermaid / hljs / folds.
+   * initMarkdownFeatures(containerEl) to activate KaTeX / Mermaid / hljs / folds.
    * @param {string}  rawText   – Markdown source (may include YAML front-matter)
    * @param {string}  [filePath] – source file path; used to resolve ![[embed]] URLs
    */
@@ -19,15 +19,12 @@
    * Must be called AFTER the rendered HTML has been inserted into the DOM.
    * @param {Element} container – the wrapper element that received the HTML
    */
-  async function initMarkdownFeatures(container) {
+  function initMarkdownFeatures(container) {
     if (typeof window.obsidianInitCalloutFolds === 'function') {
       window.obsidianInitCalloutFolds(container);
     }
     if (typeof window.obsidianInitMath === 'function') {
-      await window.obsidianInitMath(container);
-    }
-    if (typeof window.obsidianInitTikz === 'function') {
-      window.obsidianInitTikz(container);
+      window.obsidianInitMath(container);
     }
     if (typeof window.obsidianInitMermaid === 'function') {
       window.obsidianInitMermaid(container);

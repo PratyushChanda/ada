@@ -11,7 +11,7 @@
  *   obsidianGetCSS()                  – companion stylesheet string
  *   obsidianGetToggleScript()         – callout fold JS string
  *   obsidianInitCalloutFolds(root)    – activate foldable callout toggles
- *   obsidianInitMath(root)            – render math with MathJax (async, returns Promise)
+ *   obsidianInitMath(root)            – render math with KaTeX (if loaded)
  *   obsidianInitMermaid(root)         – render Mermaid diagrams (if loaded)
  *   obsidianInitHighlight(root)       – apply highlight.js to code blocks
  *
@@ -25,8 +25,7 @@
  *   ✓ #Tags
  *   ✓ Block IDs  ^blockid
  *   ✓ %% Comments %%
- *   ✓ $inline math$ and $$block math$$  (MathJax rendering when available)
- *   ✓ ```tikz blocks                       (TikZJax rendering when available)
+ *   ✓ $inline math$ and $$block math$$  (KaTeX rendering when available)
  *   ✓ ```mermaid blocks  (Mermaid.js rendering when available)
  *   ✓ Syntax-highlighted code blocks (highlight.js when available)
  *   ✓ YAML front-matter stripping
@@ -571,21 +570,6 @@
     };
   }
 
-  /* ── Rule: tikz fence ───────────────────────────────────────────────────── */
-
-  function ruleTikz(md) {
-    var orig = md.renderer.rules.fence;
-    md.renderer.rules.fence = function (tokens, idx, options, env, self) {
-      var token = tokens[idx];
-      var lang  = token.info.trim().split(/\s+/)[0].toLowerCase();
-      if (lang !== 'tikz') {
-        return orig ? orig(tokens, idx, options, env, self) : self.renderToken(tokens, idx, options);
-      }
-      /* TikZJax processes <script type="text/tikz"> elements automatically */
-      return '<script type="text/tikz">' + token.content.trim() + '<\/script>\n';
-    };
-  }
-
   /* ── Rule: heading IDs — stamp id="..." on <h1>–<h6> for wikilink anchors ─ */
 
   function ruleHeadingIds(md) {
@@ -629,32 +613,38 @@
     return { content: content, frontmatter: fm, rawFrontmatter: rawFM };
   }
 
-  /* ── Post-render init: MathJax math ─────────────────────────────────────── */
+  /* ── Post-render init: KaTeX math ───────────────────────────────────────── */
   /*                                                                           */
   /* Call after inserting rendered HTML into the DOM.                          */
-  /* Requires MathJax 3 (tex-svg build) to be loaded.                         */
-  /* Returns a Promise that resolves when typesetting is complete.             */
+  /* Requires katex.min.js to be loaded (katex CDN).                          */
 
   function initMath(root) {
+    if (typeof katex === 'undefined') return;
     var el = root || document;
 
-    /* Inline math — set \(...\) delimiters so MathJax can typeset */
-    el.querySelectorAll('.math.math-inline[data-math]:not([data-mj-rendered])').forEach(function (span) {
-      span.textContent = '\(' + span.getAttribute('data-math') + '\)';
-      span.setAttribute('data-mj-rendered', 'true');
+    /* Inline math — spans with class "math-inline" and data-math attribute */
+    el.querySelectorAll('.math.math-inline[data-math]:not([data-katex-rendered])').forEach(function (span) {
+      try {
+        span.innerHTML = katex.renderToString(span.getAttribute('data-math'), {
+          displayMode : false,
+          throwOnError: false,
+          output      : 'html'
+        });
+        span.setAttribute('data-katex-rendered', 'true');
+      } catch (e) { /* leave as-is */ }
     });
 
-    /* Block math — set \[...\] delimiters */
-    el.querySelectorAll('.math.math-block[data-math]:not([data-mj-rendered])').forEach(function (div) {
-      div.textContent = '\[' + div.getAttribute('data-math') + '\]';
-      div.setAttribute('data-mj-rendered', 'true');
+    /* Block math — divs with class "math-block" and data-math attribute */
+    el.querySelectorAll('.math.math-block[data-math]:not([data-katex-rendered])').forEach(function (div) {
+      try {
+        div.innerHTML = katex.renderToString(div.getAttribute('data-math'), {
+          displayMode : true,
+          throwOnError: false,
+          output      : 'html'
+        });
+        div.setAttribute('data-katex-rendered', 'true');
+      } catch (e) { /* leave as-is */ }
     });
-
-    /* Typeset the container (async) */
-    if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
-      return MathJax.typesetPromise([el]);
-    }
-    return Promise.resolve();
   }
 
   /* ── Post-render init: Mermaid diagrams ─────────────────────────────────── */
@@ -794,7 +784,7 @@
     var opts = {
       resolveWikilink: null, resolveEmbed: null, resolveTag: null,
       resolveTransclusion: null, calloutIcons: {},
-      enableMath: true, enableTags: true, enableComments: true, enableTikz: true,
+      enableMath: true, enableTags: true, enableComments: true,
       enableHighlight: true, enableStrikethrough: true,
       enableTaskLists: true, enableMermaid: true, enableBlockIds: true
     };
@@ -815,7 +805,6 @@
     ruleEmbeds(md, opts);
     ruleCallouts(md, opts);
     if (opts.enableMermaid)        ruleMermaid(md);
-    if (opts.enableTikz)          ruleTikz(md);
     ruleHeadingIds(md);
   }
 
@@ -844,16 +833,6 @@
       });
   };
   global.obsidianInitMath           = initMath;
-  global.obsidianInitTikz           = function (root) {
-    /* TikZJax auto-processes <script type="text/tikz"> on load, but call this  */
-    /* after dynamic insertion to trigger rendering of newly added TikZ blocks.  */
-    if (typeof TikZJax === 'undefined') return;
-    var el = root || document;
-    el.querySelectorAll('script[type="text/tikz"]:not([data-tikz-rendered])').forEach(function (s) {
-      s.setAttribute('data-tikz-rendered', 'true');
-      TikZJax.process(s);
-    });
-  };
   global.obsidianInitMermaid        = initMermaid;
   global.obsidianInitHighlight      = initHighlight;
 
