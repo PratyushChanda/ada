@@ -638,23 +638,24 @@
   function initMath(root) {
     var el = root || document;
 
-    /* Inline math — set \(...\) delimiters so MathJax can typeset */
+    /* Mark nodes so MathJax doesn't double-process on re-calls */
     el.querySelectorAll('.math.math-inline[data-math]:not([data-mj-rendered])').forEach(function (span) {
-      span.textContent = '\(' + span.getAttribute('data-math') + '\)';
       span.setAttribute('data-mj-rendered', 'true');
     });
-
-    /* Block math — set \[...\] delimiters */
     el.querySelectorAll('.math.math-block[data-math]:not([data-mj-rendered])').forEach(function (div) {
-      div.textContent = '\[' + div.getAttribute('data-math') + '\]';
       div.setAttribute('data-mj-rendered', 'true');
     });
 
-    /* Typeset the container (async) */
-    if (typeof MathJax !== 'undefined' && typeof MathJax.typesetPromise === 'function') {
-      return MathJax.typesetPromise([el]);
-    }
-    return Promise.resolve();
+    /* Wait for MathJax startup to complete (it loads async), then typeset */
+    if (typeof MathJax === 'undefined') return Promise.resolve();
+    var ready = (MathJax.startup && MathJax.startup.promise)
+      ? MathJax.startup.promise
+      : Promise.resolve();
+    return ready.then(function () {
+      if (typeof MathJax.typesetPromise === 'function') {
+        return MathJax.typesetPromise([el]);
+      }
+    });
   }
 
   /* ── Post-render init: Mermaid diagrams ─────────────────────────────────── */
