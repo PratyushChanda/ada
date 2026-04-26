@@ -44,7 +44,7 @@ const FILE_ICONS = {
 };
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js").then(() => {
+  navigator.serviceWorker.register("bin/service-worker.js").then(() => {
     console.log("Service Worker registered");
   }).catch(err => {
     console.error("SW registration failed:", err);

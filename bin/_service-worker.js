@@ -6,22 +6,14 @@
 //   - Everything else → Network-first, fall back to cache, fall back to offline page
 
 const CACHE_VERSION = 'webman-v3';
-const OFFLINE_PAGE  = '../offline.html';
+const OFFLINE_PAGE  = 'offline.html';
 
 const APP_SHELL = [
-  '../',
-  '../index.html',
-  '../offline.html',
-  '../manifest.json',
-  '../favicon.png',
-  'style.css',
-  'app.js',
-  'auth.js',
-  'upload.js',
-  'mobile.js',
-  'markdown.js',
-  'md-init.js',
-  'obsidian-markdown-it.js',
+  './',
+  'index.html',
+  'offline.html',
+  'manifest.json',
+  'favicon.png',
   'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
   'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
