@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ada Installer</title>
+  <title>Setup Ada</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -313,9 +313,9 @@ code{
     <header class="installer-header">
       <div class="logo">
         <div class="logo-mark">⚙</div>
-        <span class="logo-name">Ada Installer</span>
+        <span class="logo-name">Setup Ada</span>
       </div>
-      <div class="subtitle">One-time setup wizard</div>
+      <div class="subtitle">Configures your new Ada installation copy</div>
     </header>
 
     <nav class="progress-bar" aria-label="Progress">
@@ -335,8 +335,8 @@ code{
       <div class="card">
         <div class="card-header">
           <div class="step-label">Step 1 of 7</div>
-          <h2>Welcome to the Installer</h2>
-          <p>This wizard will configure your forked repository and deploy your app. It only takes a few minutes.</p>
+          <h2>Welcome to Setup</h2>
+          <p>This wizard will configure your installation copy and deploy your app. It only takes a few minutes.</p>
         </div>
         <div class="card-body">
           <div id="detect-ok" class="detect-pill ok" style="display:none">
@@ -402,8 +402,8 @@ code{
       <div class="card">
         <div class="card-header">
           <div class="step-label">Step 3 of 7</div>
-          <h2>Applying Changes</h2>
-          <p>Committing patches to your repository. Please don't close this tab.</p>
+          <h2>Creating setup configurations.</h2>
+          <p>Configuring setup to continue. This won't take long...</p>
         </div>
         <div class="card-body">
           <div id="apply-log" class="log-panel"></div>
@@ -562,14 +562,14 @@ code{
         <div class="success-body">
           <div class="success-icon">🎉</div>
           <h2>Installation Complete!</h2>
-          <p>Your Ada app is fully configured. All repository files have been patched, your Vercel backend is wired up, and your GitHub Pages site is ready to go.</p>
+          <p>Setup is successful! Your installation copy has been patched, and your app is ready to go.</p>
           <br>
           <p style="font-size:12.5px;color:var(--clr-muted);">
-            Click <strong>Close</strong> to remove the installer from your repository. This cannot be undone.
+            Click <strong>Close</strong> to clean up configuration files and organise your installation copy.
           </p>
           <br>
           <div class="btn-row" style="justify-content:center">
-            <button class="btn btn-primary" onclick="startCleanup()">Close &amp; Remove Installer</button>
+            <button class="btn btn-primary" onclick="startCleanup()">Start cleanup</button>
           </div>
         </div>
       </div>
@@ -581,7 +581,7 @@ code{
         <div class="cleanup-body">
           <div class="cleanup-spinner"></div>
           <h2>Cleaning Up…</h2>
-          <div class="warn-note">⚠&nbsp; Do not close this tab. It will close automatically.</div>
+          <div class="warn-note">⚠&nbsp; Do not close this tab.</div>
           <div id="cleanup-status">Preparing…</div>
           <div id="cleanup-fallback">
             <p>Installation complete. You can now close this tab.</p>
