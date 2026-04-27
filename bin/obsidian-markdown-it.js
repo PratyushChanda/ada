@@ -950,6 +950,7 @@
       var s  = document.createElement('script');
       s.type = 'text/tikz';
       s.setAttribute('data-add-to-preamble', parsed.preamble);
+      s.setAttribute('data-show-console', 'true');  /* temporary debug */
       s.textContent = parsed.body;
 
       var parent = div.parentNode;

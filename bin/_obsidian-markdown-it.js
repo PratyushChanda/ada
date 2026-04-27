@@ -745,6 +745,10 @@
     '.obsidian-block-id{display:none}',
     /* ── Mermaid ─────────────────────────────────────────────────────────────── */
     '.obsidian-mermaid{overflow-x:auto;text-align:center;margin:1em 0;background:transparent}',
+    /* -- TikZ error block -- */
+    '.tikz-error{display:flex;align-items:center;gap:.5em;margin:1em 0;padding:.6em .9em;border-left:4px solid #ef5350;border-radius:4px;background:rgba(239,83,80,.07);color:#ef5350;font-size:.9em;font-family:monospace}',
+    '.tikz-error-icon{font-size:1.1em;flex-shrink:0}',
+    '.tikz-error-msg{opacity:.9}',
     /* ── Task lists ──────────────────────────────────────────────────────────── */
     'ul.task-list{list-style:none;padding-left:1.2em}',
     'li.task-list-item{display:flex;align-items:baseline;gap:.45em;padding:.1em 0}',
@@ -848,16 +852,136 @@
   };
   global.obsidianInitMath           = initMath;
   global.obsidianInitTikz           = function (root) {
-    /* Replace each .tikz-source placeholder with a real <script type="text/tikz">
-       created via document.createElement — only live script elements are picked
-       up by TikZJax's MutationObserver; innerHTML-injected ones are inert.     */
+    /* The local bin/tikzjax/output/tikzjax.js observes document.body with
+       { childList: true, subtree: true }, so <script type="text/tikz"> elements
+       inserted anywhere in the DOM are picked up automatically.
+       Strategy: replace each .tikz-source div directly with the script element;
+       tikzjax handles the spinner -> SVG replacement in-place.
+
+       Preamble injection (required by this tikzjax build):
+       ─────────────────────────────────────────────────────
+       The tikzjax engine uses a frozen LaTeX core dump that has already passed
+       the preamble stage. This means \usepackage and \usetikzlibrary cannot
+       appear inside the script body — they must be injected via the
+       data-add-to-preamble attribute BEFORE \begin{document}.
+
+       This function automatically:
+         1. Scans the tikz block for \usepackage / \usetikzlibrary lines and
+            any setup macros (e.g. \tdplotsetmaincoords) that precede
+            \begin{tikzpicture}.
+         2. Moves them into data-add-to-preamble (appending \begin{document}).
+         3. Appends \end{document} after \end{tikzpicture} in the body.
+
+       Users write natural LaTeX in ```tikz blocks — no special syntax needed:
+
+         ```tikz
+         \usepackage{tikz-3dplot}
+         \tdplotsetmaincoords{70}{110}
+         \begin{tikzpicture}[tdplot_main_coords, scale=1.5]
+             ...
+         \end{tikzpicture}
+         ```
+
+       Error handling: when TeX compilation fails tikzjax sets
+         spinner.outerHTML = "<img src='//invalid.site/img-not-found.png'/>"
+       leaving a broken-image icon in the document.  A MutationObserver on the
+       parent catches that IMG insertion and replaces it with a styled error
+       block.  On success, tikzjax dispatches "tikzjax-load-finished" (bubbles)
+       on the rendered SVG; we use that to disconnect the observer cleanly.      */
+
+    /* ── Preamble extractor ──────────────────────────────────────────────── */
+    function extractPreamble(raw) {
+      var lines      = raw.split('\n');
+      var preamble   = [];
+      var bodyLines  = [];
+      var inBody     = false;
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var trimmed = line.trim();
+
+        if (inBody) {
+          bodyLines.push(line);
+          continue;
+        }
+
+        /* Lines before \begin{tikzpicture} that are preamble commands */
+        if (
+          /^\\usepackage\b/.test(trimmed)   ||
+          /^\\usetikzlibrary\b/.test(trimmed)
+        ) {
+          preamble.push(trimmed);
+          continue;
+        }
+
+        /* Any other command before \begin{tikzpicture} is a setup macro
+           e.g. \tdplotsetmaincoords{70}{110} */
+        if (/^\\[a-zA-Z]/.test(trimmed) && !/^\\begin\b/.test(trimmed)) {
+          preamble.push(trimmed);
+          continue;
+        }
+
+        /* Once we hit \begin{tikzpicture} (or any \begin), enter body mode */
+        inBody = true;
+        bodyLines.push(line);
+      }
+
+      /* Build the data-add-to-preamble value:
+         all extracted commands + \begin{document} */
+      var preambleAttr = preamble.join('') + (preamble.length ? '\\begin{document}' : '\\begin{document}');
+
+      /* Body: the tikzpicture content + \end{document} */
+      var body = bodyLines.join('\n').trimRight();
+      /* Append \end{document} if not already present */
+      if (body.indexOf('\\end{document}') === -1) {
+        body = body + '\n\\end{document}';
+      }
+
+      return { preamble: preambleAttr, body: body };
+    }
+
     var el = root || document;
     el.querySelectorAll('.tikz-source:not([data-tikz-rendered])').forEach(function (div) {
       div.setAttribute('data-tikz-rendered', 'true');
-      var s = document.createElement('script');
+
+      /* Extract preamble commands and clean body */
+      var parsed = extractPreamble(div.textContent);
+
+      var s  = document.createElement('script');
       s.type = 'text/tikz';
-      s.textContent = div.textContent;
-      div.parentNode.replaceChild(s, div);
+      s.setAttribute('data-add-to-preamble', parsed.preamble);
+      s.textContent = parsed.body;
+
+      var parent = div.parentNode;
+
+      /* Watch for tikzjax inserting <img src="//invalid.site/..."> on error. */
+      var obs = new MutationObserver(function (mutations) {
+        for (var m = 0; m < mutations.length; m++) {
+          var added = mutations[m].addedNodes;
+          for (var n = 0; n < added.length; n++) {
+            if (added[n].nodeName === 'IMG') {
+              obs.disconnect();
+              var err = document.createElement('div');
+              err.className = 'tikz-error';
+              err.innerHTML =
+                '<span class="tikz-error-icon">⚠️</span>' +
+                '<span class="tikz-error-msg">TikZ render failed — see console for details.</span>';
+              if (added[n].parentNode) added[n].parentNode.replaceChild(err, added[n]);
+              return;
+            }
+          }
+        }
+      });
+      obs.observe(parent, { childList: true });
+
+      /* Disconnect cleanly on success. */
+      parent.addEventListener('tikzjax-load-finished', function cleanup() {
+        parent.removeEventListener('tikzjax-load-finished', cleanup);
+        obs.disconnect();
+      });
+
+      /* Insert directly — tikzjax finds it via its subtree:true observer. */
+      parent.replaceChild(s, div);
     });
   };
   global.obsidianInitMermaid        = initMermaid;
