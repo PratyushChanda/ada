@@ -1,11 +1,35 @@
 // api/ssh.js — SSH auth server proxy
-import { createClient } from '@vercel/kv';
+// Uses Upstash Redis REST API directly via fetch — no @vercel/kv, no ioredis needed.
+// Env vars used: DATABASE_KV_REST_API_URL and DATABASE_KV_REST_API_TOKEN
 
-// Use the DATABASE_ prefixed env vars that Vercel injected
-const kv = createClient({
-  url: process.env.DATABASE_KV_REST_API_URL,
-  token: process.env.DATABASE_KV_REST_API_TOKEN,
-});
+const UPSTASH_URL   = process.env.DATABASE_KV_REST_API_URL;
+const UPSTASH_TOKEN = process.env.DATABASE_KV_REST_API_TOKEN;
+
+// ── Upstash REST client ───────────────────────────────────────────────────────
+async function redis(command, ...args) {
+  const res = await fetch(`${UPSTASH_URL}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${UPSTASH_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([command, ...args]),
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(`Redis error: ${data.error}`);
+  return data.result;
+}
+
+// ── KV helpers (auto JSON serialize/deserialize) ──────────────────────────────
+const kv = {
+  get:    async (k)    => { const v = await redis('GET', k); return v ? JSON.parse(v) : null; },
+  set:    async (k, v) => redis('SET', k, JSON.stringify(v)),
+  del:    async (k)    => redis('DEL', k),
+  incr:   async (k)    => redis('INCR', k),
+  expire: async (k, s) => redis('EXPIRE', k, String(s)),
+  ttl:    async (k)    => redis('TTL', k),
+  keys:   async (pat)  => redis('KEYS', pat),
+};
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
 async function checkRateLimit(ip, type) {
@@ -21,9 +45,7 @@ async function checkRateLimit(ip, type) {
       return { blocked: true, retryAfter: ttl };
     }
     return { blocked: false, remaining: max - count };
-  } catch (e) {
-    return { blocked: false };
-  }
+  } catch (e) { return { blocked: false }; }
 }
 
 function getIP(req) {
@@ -37,22 +59,25 @@ function getIP(req) {
 
 async function requireAdmin(req, res) {
   const fingerprint = req.headers['x-ssh-fingerprint'];
-  if (!fingerprint) {
-    res.status(401).json({ error: 'Missing X-SSH-Fingerprint header' });
-    return false;
-  }
+  if (!fingerprint) { res.status(401).json({ error: 'Missing X-SSH-Fingerprint header' }); return false; }
   const adminId = await kv.get(`ssh:fp:admin:${fingerprint}`);
-  if (!adminId) {
-    res.status(403).json({ error: 'Not an admin' });
-    return false;
-  }
+  if (!adminId) { res.status(403).json({ error: 'Not an admin' }); return false; }
   return true;
 }
 
+async function appendLog(entry) {
+  try {
+    const MAX_LOGS = 500;
+    const logs = (await kv.get('ssh:logs')) || [];
+    logs.push({ timestamp: Date.now(), ...entry });
+    if (logs.length > MAX_LOGS) logs.splice(0, logs.length - MAX_LOGS);
+    await kv.set('ssh:logs', logs);
+  } catch (e) { console.error('[api/ssh] appendLog failed:', e); }
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const ip = getIP(req);
   const body = req.body || {};
@@ -68,15 +93,14 @@ export default async function handler(req, res) {
     }
 
     if (action === 'register') {
-      if (!username || !publicKey || !publicKeyHash || !fingerprint) {
+      if (!username || !publicKey || !publicKeyHash || !fingerprint)
         return res.status(400).json({ error: 'Missing required fields' });
-      }
+
       const rl = await checkRateLimit(ip, 'register');
-      if (rl.blocked) {
-        return res.status(429).json({
-          error: `Too many registrations. Try again in ${Math.ceil(rl.retryAfter / 60)} minutes.`
-        });
-      }
+      if (rl.blocked) return res.status(429).json({
+        error: `Too many registrations. Try again in ${Math.ceil(rl.retryAfter / 60)} minutes.`
+      });
+
       const usernameKey = username.toLowerCase();
       const existing = await kv.get(`ssh:user:${usernameKey}`);
       if (existing) return res.status(409).json({ error: 'Username already registered' });
@@ -97,23 +121,22 @@ export default async function handler(req, res) {
         createdAt: Date.now(),
         registeredIP: ip
       };
+
       await kv.set(`ssh:user:${usernameKey}`, user);
       await kv.set(`ssh:keyhash:${publicKeyHash}`, usernameKey);
-      if (assignedRole === 'admin') {
-        await kv.set(`ssh:fp:admin:${fingerprint}`, user.id);
-      }
+      if (assignedRole === 'admin') await kv.set(`ssh:fp:admin:${fingerprint}`, user.id);
       await appendLog({ event: 'register', username: user.username, role: user.role, ip });
       return res.json({ ok: true, id: user.id, role: user.role });
     }
 
     if (action === 'lookup') {
       if (!publicKeyHash) return res.status(400).json({ error: 'Missing publicKeyHash' });
+
       const rl = await checkRateLimit(ip, 'login');
-      if (rl.blocked) {
-        return res.status(429).json({
-          error: `Too many login attempts. Try again in ${Math.ceil(rl.retryAfter / 60)} minutes.`
-        });
-      }
+      if (rl.blocked) return res.status(429).json({
+        error: `Too many login attempts. Try again in ${Math.ceil(rl.retryAfter / 60)} minutes.`
+      });
+
       const usernameKey = await kv.get(`ssh:keyhash:${publicKeyHash}`);
       if (!usernameKey) return res.status(404).json({ error: 'Key not found' });
       const user = await kv.get(`ssh:user:${usernameKey}`);
@@ -127,7 +150,7 @@ export default async function handler(req, res) {
       return res.json({ ok: true });
     }
 
-    // Admin-only below
+    // ── Admin-only below ──────────────────────────────────────────────────────
     const isAdmin = await requireAdmin(req, res);
     if (!isAdmin) return;
 
@@ -174,9 +197,8 @@ export default async function handler(req, res) {
     }
 
     if (action === 'rotateKey') {
-      if (!userId || !publicKey || !publicKeyHash || !fingerprint) {
+      if (!userId || !publicKey || !publicKeyHash || !fingerprint)
         return res.status(400).json({ error: 'Missing required fields' });
-      }
       const keys = await kv.keys('ssh:user:*');
       for (const k of keys) {
         const u = await kv.get(k);
@@ -212,17 +234,5 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[api/ssh]', err);
     return res.status(500).json({ error: err.message || 'Internal server error' });
-  }
-}
-
-async function appendLog(entry) {
-  try {
-    const MAX_LOGS = 500;
-    const logs = (await kv.get('ssh:logs')) || [];
-    logs.push({ timestamp: Date.now(), ...entry });
-    if (logs.length > MAX_LOGS) logs.splice(0, logs.length - MAX_LOGS);
-    await kv.set('ssh:logs', logs);
-  } catch (e) {
-    console.error('[api/ssh] appendLog failed:', e);
   }
 }
